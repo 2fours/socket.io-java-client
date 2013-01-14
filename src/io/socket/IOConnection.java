@@ -571,6 +571,7 @@ class IOConnection implements IOCallback {
 		this.lastException = error;
 		setState(STATE_INTERRUPTED);
 		error(new SocketIOException(error.getMessage()));
+	//	reconnect();
 	}
 
 	/**
