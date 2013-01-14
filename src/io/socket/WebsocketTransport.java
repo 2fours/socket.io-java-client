@@ -94,7 +94,7 @@ public class WebsocketTransport extends WebSocketClient implements IOTransport {
 
     @Override
     public void onError(Exception ex) {
-    	System.err.println("websocket transport error: " + ex.toString());
+    	//System.err.println("websocket transport error: " + ex.toString());
     	if (connection != null) {
     		connection.transportError(ex);
     	}

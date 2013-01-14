@@ -23,7 +23,6 @@ import java.util.Properties;
 import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Logger;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -92,9 +91,6 @@ class IOConnection implements IOCallback {
 
 	/** The protocols supported by the server. */
 	private List<String> protocols;
-
-	/** The output buffer used to cache messages while (re-)connecting. */
-	private ConcurrentLinkedQueue<String> outputBuffer = new ConcurrentLinkedQueue<String>();
 
 	/** The sockets of this connection. */
 	private HashMap<String, SocketIO> sockets = new HashMap<String, SocketIO>();
@@ -456,16 +452,14 @@ class IOConnection implements IOCallback {
 	 *            the Text to be send.
 	 */
 	private synchronized void sendPlain(String text) {
-		if (getState() == STATE_READY)
+		if (getState() == STATE_READY) {
 			try {
 				logger.info("> " + text);
 				transport.send(text);
 			} catch (Exception e) {
-				logger.info("IOEx: saving");
-				outputBuffer.add(text);
-			}
-		else {
-			outputBuffer.add(text);
+				//logger.info("IOEx: saving");
+		
+			}		
 		}
 	}
 
@@ -523,29 +517,7 @@ class IOConnection implements IOCallback {
 			reconnectTask.cancel();
 			reconnectTask = null;
 		}
-		resetTimeout();
-		if (transport.canSendBulk()) {
-			ConcurrentLinkedQueue<String> outputBuffer = this.outputBuffer;
-			this.outputBuffer = new ConcurrentLinkedQueue<String>();
-			try {
-				// DEBUG
-				String[] texts = outputBuffer.toArray(new String[outputBuffer
-						.size()]);
-				logger.info("Bulk start:");
-				for (String text : texts) {
-					logger.info("> " + text);
-				}
-				logger.info("Bulk end");
-				// DEBUG END
-				transport.sendBulk(texts);
-			} catch (IOException e) {
-				this.outputBuffer = outputBuffer;
-			}
-		} else {
-			String text;
-			while ((text = outputBuffer.poll()) != null)
-				sendPlain(text);
-		}
+		resetTimeout();		
 		this.keepAliveInQueue = false;
 	}
 
