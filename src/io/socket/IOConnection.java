@@ -305,6 +305,7 @@ class IOConnection implements IOCallback {
 			connection.setReadTimeout(connectTimeout);
 
 			/* Setting the request headers */
+			
 			for (Entry<Object, Object> entry : headers.entrySet()) {
 				connection.setRequestProperty((String) entry.getKey(),
 						(String) entry.getValue());
@@ -569,7 +570,7 @@ class IOConnection implements IOCallback {
 	public void transportError(Exception error) {
 		this.lastException = error;
 		setState(STATE_INTERRUPTED);
-		reconnect();
+		error(new SocketIOException(error.getMessage()));
 	}
 
 	/**

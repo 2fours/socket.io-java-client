@@ -6,13 +6,12 @@ import java.net.URL;
 import java.util.regex.Pattern;
 
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLSocketFactory;
 
 import org.java_websocket.client.DefaultSSLWebSocketClientFactory;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 
-class WebsocketTransport extends WebSocketClient implements IOTransport {
+public class WebsocketTransport extends WebSocketClient implements IOTransport {
     private final static Pattern PATTERN_HTTP = Pattern.compile("^http");
     public static final String TRANSPORT_NAME = "websocket";
     private IOConnection connection;
@@ -95,7 +94,10 @@ class WebsocketTransport extends WebSocketClient implements IOTransport {
 
     @Override
     public void onError(Exception ex) {
-        // TODO Auto-generated method stub
+    	System.err.println("websocket transport error: " + ex.toString());
+    	if (connection != null) {
+    		connection.transportError(ex);
+    	}
 
     }
 }
