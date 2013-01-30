@@ -35,6 +35,7 @@ import org.json.JSONObject;
 /**
  * The Class IOConnection.
  */
+@SuppressWarnings("unused")
 class IOConnection implements IOCallback {
 	/** Debug logger */
 	static final Logger logger = Logger.getLogger("io.socket");
@@ -271,11 +272,13 @@ class IOConnection implements IOCallback {
 	 * @param socket
 	 *            the socket to be shut down
 	 */
-	public synchronized void unregister(SocketIO socket) {
+	public synchronized void unregister(SocketIO socket) {		
 		sendPlain("0::" + socket.getNamespace());
 		sockets.remove(socket.getNamespace());
 		socket.getCallback().onDisconnect();
+		
 
+		//System.out.println("IOConnection unregister, sockets.size(): " + sockets.size());
 		if (sockets.size() == 0) {
 			cleanup();
 		}
@@ -419,7 +422,7 @@ class IOConnection implements IOCallback {
 	private synchronized void cleanup() {
 		setState(STATE_INVALID);
 		if (transport != null)
-			transport.disconnect();
+			transport.disconnect();		
 		sockets.clear();
 		synchronized (connections) {
 			List<IOConnection> con = connections.get(urlStr);
@@ -584,7 +587,7 @@ class IOConnection implements IOCallback {
 	 *            the text
 	 */
 	public void transportMessage(String text) {
-		logger.info("< " + text);
+		//logger.info("< " + text);
 		IOMessage message;
 		try {
 			message = new IOMessage(text);
@@ -685,7 +688,7 @@ class IOConnection implements IOCallback {
 			if (data.length == 2) {
 				try {
 					int id = Integer.parseInt(data[0]);
-					IOAcknowledge ack = acknowledge.get(id);
+					IOAcknowledge ack = acknowledge.remove(id);
 					if (ack == null)
 						logger.warning("Received unknown ack packet");
 					else {
@@ -730,6 +733,7 @@ class IOConnection implements IOCallback {
 	 * do not shut down TCP-connections when switching from HSDPA to Wifi
 	 */
 	public synchronized void reconnect() {
+		//System.out.println("IOConnection::\70econnect");
 		if (getState() != STATE_INVALID) {
 			invalidateTransport();
 			setState(STATE_INTERRUPTED);

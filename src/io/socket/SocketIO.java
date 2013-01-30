@@ -20,6 +20,7 @@ import org.json.JSONObject;
 /**
  * The Class SocketIO.
  */
+@SuppressWarnings("unused")
 public class SocketIO {
 
 	/** callback of this Socket. */
