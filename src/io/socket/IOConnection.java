@@ -33,12 +33,15 @@ import org.json.JSONObject;
 
 import ch.boye.httpclientandroidlib.HttpEntity;
 import ch.boye.httpclientandroidlib.HttpResponse;
+import ch.boye.httpclientandroidlib.HttpStatus;
 import ch.boye.httpclientandroidlib.client.HttpClient;
 import ch.boye.httpclientandroidlib.client.methods.HttpPost;
 import ch.boye.httpclientandroidlib.impl.client.AbstractHttpClient;
 import ch.boye.httpclientandroidlib.impl.client.DefaultHttpClient;
 
-import com.twofours.surespot.socketio.WebClientDevWrapper;
+import com.twofours.surespot.common.SurespotLog;
+import com.twofours.surespot.common.Utils;
+import com.twofours.surespot.common.WebClientDevWrapper;
 
 /**
  * The Class IOConnection.
@@ -294,33 +297,39 @@ class IOConnection implements IOCallback {
 		URLConnection connection;
 		try {
 			setState(STATE_HANDSHAKE);
-
 			AbstractHttpClient client = new DefaultHttpClient();
-			// uncomment for self signed 
 			WebClientDevWrapper.wrapClient(client);
 			HttpPost post = new HttpPost(IOConnection.this.url.toString() + SOCKET_IO_1);
 
 			// /* Setting the request headers */
 			//
-//			for (Entry<String, String> entry : headers.entrySet()) {
-//				post.addHeader((String) entry.getKey(), (String) entry.getValue());
-//			}
+			for (Entry<String, String> entry : headers.entrySet()) {
+				post.addHeader((String) entry.getKey(), (String) entry.getValue());
+			}
 
 			// Execute the GET call and obtain the response
 			HttpResponse getResponse = client.execute(post);
 			HttpEntity responseEntity = getResponse.getEntity();
 			InputStream stream = responseEntity.getContent();
 
-			Scanner in = new Scanner(stream);
-			response = in.nextLine();
-			String[] data = response.split(":");
-			sessionId = data[0];
-			heartbeatTimeout = Long.parseLong(data[1]) * 1000;
-			closingTimeout = Long.parseLong(data[2]) * 1000;
-			protocols = Arrays.asList(data[3].split(","));		
+			if (getResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+
+				Scanner in = new Scanner(stream);
+				response = in.nextLine();
+				String[] data = response.split(":");
+				sessionId = data[0];
+				heartbeatTimeout = Long.parseLong(data[1]) * 1000;
+				closingTimeout = Long.parseLong(data[2]) * 1000;
+				protocols = Arrays.asList(data[3].split(","));
+			}
+			else {
+				SurespotLog.w(TAG, "Could not handshake, response: " + Utils.inputStreamToString(stream));
+				setState(STATE_INVALID);
+			}
 		}
 		catch (Exception e) {
 			error(new SocketIOException("Error while handshaking", e));
+			setState(STATE_INVALID);
 		}
 	}
 
@@ -455,10 +464,10 @@ class IOConnection implements IOCallback {
 	 */
 	private synchronized void sendPlain(String text) {
 		if (getState() == STATE_READY) {
-			try {				
+			try {
 				transport.send(text);
 			}
-			catch (Exception e) {			
+			catch (Exception e) {
 				// logger.info("IOEx: saving");
 
 			}
