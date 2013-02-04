@@ -35,6 +35,7 @@ import ch.boye.httpclientandroidlib.HttpEntity;
 import ch.boye.httpclientandroidlib.HttpResponse;
 import ch.boye.httpclientandroidlib.client.HttpClient;
 import ch.boye.httpclientandroidlib.client.methods.HttpPost;
+import ch.boye.httpclientandroidlib.impl.client.AbstractHttpClient;
 import ch.boye.httpclientandroidlib.impl.client.DefaultHttpClient;
 
 import com.twofours.surespot.socketio.WebClientDevWrapper;
@@ -294,35 +295,22 @@ class IOConnection implements IOCallback {
 		try {
 			setState(STATE_HANDSHAKE);
 
-			HttpClient client = new DefaultHttpClient();// uncomment for self signed  WebClientDevWrapper.wrapClient(new DefaultHttpClient());
+			AbstractHttpClient client = new DefaultHttpClient();
+			// uncomment for self signed 
+			WebClientDevWrapper.wrapClient(client);
 			HttpPost post = new HttpPost(IOConnection.this.url.toString() + SOCKET_IO_1);
 
 			// /* Setting the request headers */
 			//
-			for (Entry<String, String> entry : headers.entrySet()) {
-				post.addHeader((String) entry.getKey(), (String) entry.getValue());
-			}
+//			for (Entry<String, String> entry : headers.entrySet()) {
+//				post.addHeader((String) entry.getKey(), (String) entry.getValue());
+//			}
 
 			// Execute the GET call and obtain the response
 			HttpResponse getResponse = client.execute(post);
 			HttpEntity responseEntity = getResponse.getEntity();
 			InputStream stream = responseEntity.getContent();
 
-			// url = new URL(IOConnection.this.url.toString() + SOCKET_IO_1);
-			// connection = url.openConnection();
-			// if (connection instanceof HttpsURLConnection) {
-			// ((HttpsURLConnection) connection).setSSLSocketFactory(sslContext.getSocketFactory());
-			// }
-			// connection.setConnectTimeout(connectTimeout);
-			// connection.setReadTimeout(connectTimeout);
-			//
-			// /* Setting the request headers */
-			//
-			// for (Entry<Object, Object> entry : headers.entrySet()) {
-			// connection.setRequestProperty((String) entry.getKey(), (String) entry.getValue());
-			// }
-			//
-			// InputStream stream = connection.getInputStream();
 			Scanner in = new Scanner(stream);
 			response = in.nextLine();
 			String[] data = response.split(":");
