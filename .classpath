@@ -3,12 +3,12 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="lib" path="libs/json-org.jar"/>
-	<classpathentry exported="true" kind="lib" path="libs/java_websocket.jar" sourcepath="/home/adam/dev/surespot/libs/android/github/forks/Java-WebSocket/src/main/java"/>
+	<classpathentry kind="lib" path="/home/adam/dev/surespot/libs/android/google/httpclientandroidlib/script/httpclientandroidlib-1.1.1.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/common"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/SSLWebSocket"/>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="examples"/>
 	<classpathentry kind="src" path="tests"/>
-	<classpathentry kind="lib" path="/home/adam/dev/surespot/libs/android/google/httpclientandroidlib/script/httpclientandroidlib-1.1.1.jar"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/common"/>
-	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
+	<classpathentry kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

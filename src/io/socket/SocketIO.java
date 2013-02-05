@@ -119,15 +119,6 @@ public class SocketIO {
 	}
 
 	/**
-	 * Set the socket factory used for SSL connections.
-	 * 
-	 * @param socketFactory
-	 */
-	public static void setDefaultSSLSocketFactory(SSLContext sslContext) {
-		IOConnection.setSslContext(sslContext);
-	}
-
-	/**
 	 * connects to supplied host using callback. Do only use this method if you instantiate {@link SocketIO} using {@link #SocketIO()}.
 	 * 
 	 * @param url

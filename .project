@@ -24,11 +24,4 @@
 	<natures>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
-	<linkedResources>
-		<link>
-			<name>libs/java_websocket.jar</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/Java-WebSocket/dist/java_websocket.jar</locationURI>
-		</link>
-	</linkedResources>
 </projectDescription>

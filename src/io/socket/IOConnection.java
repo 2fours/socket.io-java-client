@@ -31,6 +31,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.os.AsyncTask;
 import ch.boye.httpclientandroidlib.HttpEntity;
 import ch.boye.httpclientandroidlib.HttpResponse;
 import ch.boye.httpclientandroidlib.HttpStatus;
@@ -78,9 +79,6 @@ class IOConnection implements IOCallback {
 	public static final String SOCKET_IO_1 = "/socket.io/1/";
 
 	private static final String TAG = "IOConnection";
-
-	/** The SSL socket factory for HTTPS connections */
-	private static SSLContext sslContext = null;
 
 	/** All available connections. */
 	private static HashMap<String, List<IOConnection>> connections = new HashMap<String, List<IOConnection>>();
@@ -184,44 +182,27 @@ class IOConnection implements IOCallback {
 	/**
 	 * The Class ConnectThread. Handles connecting to the server with an {@link IOTransport}
 	 */
-	private class ConnectThread extends Thread {
-		/**
-		 * Instantiates a new thread for handshaking/connecting.
-		 */
-		public ConnectThread() {
-			super("ConnectThread");
-		}
-
-		/**
-		 * Tries handshaking if necessary and connects with corresponding transport afterwards.
-		 */
-		@Override
-		public void run() {
-			if (IOConnection.this.getState() == STATE_INIT)
-				handshake();
-			connectTransport();
-		}
-
-	};
-
-	/**
-	 * Set the socket factory used for SSL connections.
-	 * 
-	 * @param sslContext
-	 */
-	public static void setSslContext(SSLContext sslContext) {
-		IOConnection.sslContext = sslContext;
-	}
-
-	/**
-	 * Get the socket factory used for SSL connections.
-	 * 
-	 * @return socketFactory
-	 */
-	public static SSLContext getSslContext() {
-		return sslContext;
-	}
-
+//	private class ConnectThread extends Thread {
+//		/**
+//		 * Instantiates a new thread for handshaking/connecting.
+//		 */
+//		public ConnectThread() {
+//			super("ConnectThread");
+//		}
+//
+//		/**
+//		 * Tries handshaking if necessary and connects with corresponding transport afterwards.
+//		 */
+//		@Override
+//		public void run() {
+//			
+//			if (IOConnection.this.getState() == STATE_INIT)
+//				handshake();
+//			connectTransport();
+//		}
+//
+//	};
+	
 	/**
 	 * Creates a new connection or returns the corresponding one.
 	 * 
@@ -298,7 +279,7 @@ class IOConnection implements IOCallback {
 		try {
 			setState(STATE_HANDSHAKE);
 			AbstractHttpClient client = new DefaultHttpClient();
-			WebClientDevWrapper.wrapClient(client);
+			WebClientDevWrapper.wrapClient( client);
 			HttpPost post = new HttpPost(IOConnection.this.url.toString() + SOCKET_IO_1);
 
 			// /* Setting the request headers */
@@ -326,6 +307,7 @@ class IOConnection implements IOCallback {
 				SurespotLog.w(TAG, "Could not handshake, response: " + Utils.inputStreamToString(stream));
 				setState(STATE_INVALID);
 			}
+			//post.reset();
 		}
 		catch (Exception e) {
 			error(new SocketIOException("Error while handshaking", e));
@@ -341,9 +323,7 @@ class IOConnection implements IOCallback {
 			return;
 		setState(STATE_CONNECTING);
 		if (protocols.contains(WebsocketTransport.TRANSPORT_NAME))
-			transport = WebsocketTransport.create(url, this);
-		else if (protocols.contains(XhrTransport.TRANSPORT_NAME))
-			transport = XhrTransport.create(url, this);
+			transport = WebsocketTransport.create(url, this);		
 		else {
 			error(new SocketIOException(
 					"Server supports no available transports. You should reconfigure the server to support a available transport"));
@@ -421,7 +401,29 @@ class IOConnection implements IOCallback {
 		firstSocket = socket;
 		headers = socket.getHeaders();
 		sockets.put(socket.getNamespace(), socket);
-		new ConnectThread().start();
+		//new ConnectThread().start();
+		
+		
+		if (IOConnection.this.getState() == STATE_INIT) {
+			new AsyncTask<Void,Void,Void>() {
+
+				@Override
+				protected Void doInBackground(Void... params) {
+					handshake();
+					return null;
+				};
+				
+				protected void onPostExecute(Void result) {
+					connectTransport();			
+				};
+			}.execute();
+			
+			
+		}
+		else {
+			connectTransport();
+		}
+		
 	}
 
 	/**
@@ -468,8 +470,7 @@ class IOConnection implements IOCallback {
 				transport.send(text);
 			}
 			catch (Exception e) {
-				// logger.info("IOEx: saving");
-
+				SurespotLog.w(TAG, "sendPlain",e);
 			}
 		}
 	}
@@ -537,7 +538,7 @@ class IOConnection implements IOCallback {
 	public void transportDisconnected() {
 		this.lastException = null;
 		setState(STATE_INTERRUPTED);
-		reconnect();
+		//reconnect();
 	}
 
 	/**
