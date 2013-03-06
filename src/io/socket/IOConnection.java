@@ -31,6 +31,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.content.Intent;
 import android.os.AsyncTask;
 import ch.boye.httpclientandroidlib.HttpEntity;
 import ch.boye.httpclientandroidlib.HttpResponse;
@@ -116,7 +117,7 @@ class IOConnection implements IOCallback {
 	private SocketIO firstSocket = null;
 
 	/** The reconnect timer. IOConnect waits a second before trying to reconnect */
-	final private Timer backgroundTimer = new Timer("backgroundTimer");
+	private Timer backgroundTimer = new Timer("backgroundTimer");
 
 	/** A String representation of {@link #url}. */
 	private String urlStr;
@@ -182,27 +183,27 @@ class IOConnection implements IOCallback {
 	/**
 	 * The Class ConnectThread. Handles connecting to the server with an {@link IOTransport}
 	 */
-//	private class ConnectThread extends Thread {
-//		/**
-//		 * Instantiates a new thread for handshaking/connecting.
-//		 */
-//		public ConnectThread() {
-//			super("ConnectThread");
-//		}
-//
-//		/**
-//		 * Tries handshaking if necessary and connects with corresponding transport afterwards.
-//		 */
-//		@Override
-//		public void run() {
-//			
-//			if (IOConnection.this.getState() == STATE_INIT)
-//				handshake();
-//			connectTransport();
-//		}
-//
-//	};
-	
+	// private class ConnectThread extends Thread {
+	// /**
+	// * Instantiates a new thread for handshaking/connecting.
+	// */
+	// public ConnectThread() {
+	// super("ConnectThread");
+	// }
+	//
+	// /**
+	// * Tries handshaking if necessary and connects with corresponding transport afterwards.
+	// */
+	// @Override
+	// public void run() {
+	//
+	// if (IOConnection.this.getState() == STATE_INIT)
+	// handshake();
+	// connectTransport();
+	// }
+	//
+	// };
+
 	/**
 	 * Creates a new connection or returns the corresponding one.
 	 * 
@@ -263,9 +264,9 @@ class IOConnection implements IOCallback {
 		socket.getCallback().onDisconnect();
 
 		// System.out.println("IOConnection unregister, sockets.size(): " + sockets.size());
-		if (sockets.size() == 0) {
-			cleanup();
-		}
+		// if (sockets.size() == 0) {
+		cleanup();
+		// }
 	}
 
 	/**
@@ -279,7 +280,7 @@ class IOConnection implements IOCallback {
 		try {
 			setState(STATE_HANDSHAKE);
 			AbstractHttpClient client = new DefaultHttpClient();
-			WebClientDevWrapper.wrapClient( client);
+			WebClientDevWrapper.wrapClient(client);
 			HttpPost post = new HttpPost(IOConnection.this.url.toString() + SOCKET_IO_1);
 
 			// /* Setting the request headers */
@@ -292,8 +293,9 @@ class IOConnection implements IOCallback {
 			HttpResponse getResponse = client.execute(post);
 			HttpEntity responseEntity = getResponse.getEntity();
 			InputStream stream = responseEntity.getContent();
+			int httpStatus = getResponse.getStatusLine().getStatusCode();
 
-			if (getResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+			if (httpStatus == HttpStatus.SC_OK) {
 
 				Scanner in = new Scanner(stream);
 				response = in.nextLine();
@@ -306,11 +308,12 @@ class IOConnection implements IOCallback {
 			else {
 				SurespotLog.w(TAG, "Could not handshake, response: " + Utils.inputStreamToString(stream));
 				setState(STATE_INVALID);
+				error(new SocketIOException("Error while handshaking", httpStatus));
+
 			}
-			//post.reset();
 		}
 		catch (Exception e) {
-			error(new SocketIOException("Error while handshaking", e));
+			error(new SocketIOException("Error while handshaking", 0));
 			setState(STATE_INVALID);
 		}
 	}
@@ -323,7 +326,7 @@ class IOConnection implements IOCallback {
 			return;
 		setState(STATE_CONNECTING);
 		if (protocols.contains(WebsocketTransport.TRANSPORT_NAME))
-			transport = WebsocketTransport.create(url, this);		
+			transport = WebsocketTransport.create(url, this);
 		else {
 			error(new SocketIOException(
 					"Server supports no available transports. You should reconfigure the server to support a available transport"));
@@ -401,29 +404,27 @@ class IOConnection implements IOCallback {
 		firstSocket = socket;
 		headers = socket.getHeaders();
 		sockets.put(socket.getNamespace(), socket);
-		//new ConnectThread().start();
-		
-		
+		// new ConnectThread().start();
+
 		if (IOConnection.this.getState() == STATE_INIT) {
-			new AsyncTask<Void,Void,Void>() {
+			new AsyncTask<Void, Void, Void>() {
 
 				@Override
 				protected Void doInBackground(Void... params) {
 					handshake();
 					return null;
 				};
-				
+
 				protected void onPostExecute(Void result) {
-					connectTransport();			
+					connectTransport();
 				};
 			}.execute();
-			
-			
+
 		}
 		else {
 			connectTransport();
 		}
-		
+
 	}
 
 	/**
@@ -443,6 +444,7 @@ class IOConnection implements IOCallback {
 		}
 		logger.info("Cleanup");
 		backgroundTimer.cancel();
+		backgroundTimer = null;
 	}
 
 	/**
@@ -470,7 +472,7 @@ class IOConnection implements IOCallback {
 				transport.send(text);
 			}
 			catch (Exception e) {
-				SurespotLog.w(TAG, "sendPlain",e);
+				SurespotLog.w(TAG, "sendPlain", e);
 			}
 		}
 	}
@@ -488,12 +490,15 @@ class IOConnection implements IOCallback {
 	 * Reset timeout.
 	 */
 	private synchronized void resetTimeout() {
-		if (heartbeatTimeoutTask != null) {
-			heartbeatTimeoutTask.cancel();
-		}
-		if (getState() != STATE_INVALID) {
-			heartbeatTimeoutTask = new HearbeatTimeoutTask();
-			backgroundTimer.schedule(heartbeatTimeoutTask, closingTimeout + heartbeatTimeout);
+		if (backgroundTimer != null) {
+			if (heartbeatTimeoutTask != null) {
+				heartbeatTimeoutTask.cancel();
+			}
+
+			if (getState() != STATE_INVALID) {
+				heartbeatTimeoutTask = new HearbeatTimeoutTask();
+				backgroundTimer.schedule(heartbeatTimeoutTask, closingTimeout + heartbeatTimeout);
+			}
 		}
 	}
 
@@ -538,7 +543,7 @@ class IOConnection implements IOCallback {
 	public void transportDisconnected() {
 		this.lastException = null;
 		setState(STATE_INTERRUPTED);
-		//reconnect();
+		// reconnect();
 	}
 
 	/**
@@ -745,8 +750,11 @@ class IOConnection implements IOCallback {
 			if (reconnectTask != null) {
 				reconnectTask.cancel();
 			}
-			reconnectTask = new ReconnectTask();
-			backgroundTimer.schedule(reconnectTask, 1000);
+
+			if (backgroundTimer != null) {
+				reconnectTask = new ReconnectTask();
+				backgroundTimer.schedule(reconnectTask, 1000);
+			}
 		}
 	}
 
