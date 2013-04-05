@@ -306,7 +306,7 @@ class IOConnection implements IOCallback {
 				protocols = Arrays.asList(data[3].split(","));
 			}
 			else {
-				SurespotLog.w(TAG, "Could not handshake, response: " + Utils.inputStreamToString(stream));
+				SurespotLog.w(TAG, "Could not handshake, httpstatus: " + httpStatus);
 				setState(STATE_INVALID);
 				error(new SocketIOException("Error while handshaking", httpStatus));
 
@@ -443,8 +443,10 @@ class IOConnection implements IOCallback {
 				connections.remove(urlStr);
 		}
 		logger.info("Cleanup");
-		backgroundTimer.cancel();
-		backgroundTimer = null;
+		if (backgroundTimer != null) {
+			backgroundTimer.cancel();
+			backgroundTimer = null;
+		}
 	}
 
 	/**
