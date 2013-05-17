@@ -313,7 +313,7 @@ class IOConnection implements IOCallback {
 			}
 		}
 		catch (Exception e) {
-			error(new SocketIOException("Error while handshaking", 0));
+			error(new SocketIOException("Unexpected error while handshaking", 0));
 			setState(STATE_INVALID);
 		}
 	}
